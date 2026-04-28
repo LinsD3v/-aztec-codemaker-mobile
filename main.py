@@ -15,24 +15,28 @@ class AztecApp(App):
     def build(self):
         self.layout = BoxLayout(orientation='vertical', padding=20, spacing=20)
 
-        # Input numérico
+        # Input
         self.input = TextInput(
             hint_text="Digite um número (ex: 42)",
             multiline=False,
             font_size=32,
-            size_hint=(1, 0.2)
+            size_hint=(1, 0.15)
         )
 
-        # Botão gerar
+        # Botão
         self.button = Button(
             text="Gerar Aztec",
             font_size=28,
-            size_hint=(1, 0.2)
+            size_hint=(1, 0.15)
         )
         self.button.bind(on_press=self.generate_code)
 
-        # Imagem do código
-        self.image = Image(size_hint=(1, 0.6))
+        # Imagem (CORRIGIDO)
+        self.image = Image(
+            size_hint=(1, 0.7),
+            allow_stretch=True,
+            keep_ratio=True
+        )
 
         self.layout.add_widget(self.input)
         self.layout.add_widget(self.button)
@@ -51,21 +55,34 @@ class AztecApp(App):
             barcode_type='azteccode',
             data=value
         )
-        
-        # Converte para Buffer
+
+        # Escala baseada na tela
+        screen_w, screen_h = Window.size
+        scale = int(min(screen_w, screen_h) / 100)
+
+        w, h = img.size
+        img = img.resize((w * scale, h * scale), PILImage.NEAREST)
+
+        # Buffer
         buffer = io.BytesIO()
         img.convert('RGBA').save(buffer, format='PNG')
         buffer.seek(0)
-        
+
         pil_image = PILImage.open(buffer)
         
-        data = pil_image.tobytes()
+        self.image.texture = None
         texture = Texture.create(size=pil_image.size)
-        texture.blit_buffer(data, colorfmt='rgba', bufferfmt='ubyte')
-        
+        texture.blit_buffer(
+            pil_image.tobytes(),
+            colorfmt='rgba',
+            bufferfmt='ubyte'
+        )
+
         self.image.texture = texture
 
 
 if __name__ == "__main__":
-    Window.size = (400, 700)  # útil pra testar no PC
+    # Só pra PC (opcional)
+    Window.size = (400, 700)
+
     AztecApp().run()
